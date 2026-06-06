@@ -1,7 +1,7 @@
 import secrets
 import uuid
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 
 from ai import generate_quiz
 from storage import SQLiteBackend
@@ -31,14 +31,12 @@ def _new_id() -> str:
 
 @app.get("/")
 def index():
-    return jsonify({
-        "app": "DYKM",
-        "routes": [
-            "POST /quizzes",
-            "GET  /quizzes/<id>",
-            "POST /quizzes/<id>/plays",
-        ],
-    })
+    return render_template("index.html")
+
+
+@app.get("/q/<quiz_id>")
+def play_quiz(quiz_id: str):
+    return render_template("play.html")
 
 
 @app.post("/quizzes")

@@ -44,15 +44,19 @@ EXAMPLE — follow this structure exactly:
 
 def _strip_fences(text: str) -> str:
     text = text.strip()
-    # Remove ```json ... ``` or ``` ... ```
     text = re.sub(r"^```(?:json)?\s*", "", text)
     text = re.sub(r"\s*```$", "", text)
     return text.strip()
 
 
+def _clean_json(text: str) -> str:
+    # Remove trailing commas before ] or } — models sometimes generate these
+    return re.sub(r",\s*([}\]])", r"\1", text)
+
+
 def parse_quiz_json(raw: str) -> list[dict]:
-    """Strip stray code fences then parse JSON. Raises json.JSONDecodeError on bad input."""
-    return json.loads(_strip_fences(raw))
+    """Strip stray code fences, clean trailing commas, then parse JSON."""
+    return json.loads(_clean_json(_strip_fences(raw)))
 
 
 def generate_quiz(creator_name: str, answers: list[str]) -> list[dict]:
@@ -67,7 +71,7 @@ def generate_quiz(creator_name: str, answers: list[str]) -> list[dict]:
     client = anthropic.Anthropic()
     response = client.messages.create(
         model=MODEL,
-        max_tokens=2048,
+        max_tokens=4096,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_message}],
     )

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DYKM — Quiz</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="page">
+    <div class="logo">DYKM<span class="dot">.</span></div>
+
+    <!-- Loading -->
+    <div id="loading-section" class="section active">
+      <div class="card text-center">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading quiz…</div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="error-section" class="section">
+      <div class="card text-center">
+        <p style="font-size:40px;margin-bottom:12px">🤷</p>
+        <h2>Quiz not found</h2>
+        <p class="subtitle mt-8">Double-check the link and try again.</p>
+      </div>
+    </div>
+
+    <!-- Name entry -->
+    <div id="name-section" class="section">
+      <div class="card">
+        <h2 id="creator-heading"></h2>
+        <p class="subtitle" id="creator-subtitle"></p>
+        <div class="field mt-24">
+          <label>Your name</label>
+          <input class="input" id="player-name" type="text" placeholder="e.g. Ali" maxlength="50" autocomplete="off">
+        </div>
+        <button class="btn btn-primary" id="start-btn" type="button">Start Quiz →</button>
+      </div>
+    </div>
+
+    <!-- Question -->
+    <div id="quiz-section" class="section">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+      <div class="card">
+        <div class="question-meta" id="question-meta"></div>
+        <div class="question-text" id="question-text"></div>
+        <div class="options-list" id="options-list"></div>
+      </div>
+      <button class="btn btn-primary" id="next-btn" type="button" disabled>Next →</button>
+    </div>
+
+    <!-- Submitting -->
+    <div id="submitting-section" class="section">
+      <div class="card text-center">
+        <div class="spinner"></div>
+        <div class="loading-text">Grading your answers…<br>Preparing your roast 🔥</div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results-section" class="section">
+      <div class="card score-display">
+        <div>
+          <span class="score-big" id="score-num">0</span><span class="score-denom" id="score-denom">/7</span>
+        </div>
+        <div class="score-summary" id="score-summary"></div>
+      </div>
+
+      <div class="card">
+        <h2>The Breakdown</h2>
+        <p class="subtitle">Here's what the roast machine had to say.</p>
+        <div id="results-list"></div>
+      </div>
+
+      <div class="card" id="leaderboard-card">
+        <h2>Leaderboard</h2>
+        <div id="leaderboard-list"></div>
+      </div>
+
+      <button class="btn btn-outline" id="play-again-btn" type="button">Play again</button>
+      <a href="/" class="btn btn-outline" style="display:block;text-align:center;text-decoration:none;margin-top:10px;padding:15px 20px;border-radius:10px;font-size:16px;font-weight:700;color:var(--text);border:1.5px solid var(--border);">
+        Create your own quiz 🔥
+      </a>
+    </div>
+  </div>
+
+  <script>
+    let quizId = '';
+    let quiz = null;
+    let answers = [];
+    let current = 0;
+
+    function show(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    async function loadQuiz() {
+      quizId = location.pathname.split('/').filter(Boolean).pop();
+      try {
+        const res = await fetch('/quizzes/' + quizId);
+        if (!res.ok) throw new Error('not found');
+        quiz = await res.json();
+
+        document.getElementById('creator-heading').textContent = `Do you know ${quiz.creator_name}?`;
+        document.getElementById('creator-subtitle').textContent =
+          quiz.play_count === 0
+            ? 'Be the first to take this quiz.'
+            : `${quiz.play_count} ${quiz.play_count === 1 ? 'person has' : 'people have'} taken this. Prove you know them better.`;
+        document.title = `DYKM — Do you know ${quiz.creator_name}?`;
+        show('name-section');
+      } catch {
+        show('error-section');
+      }
+    }
+
+    function startQuiz() {
+      const name = document.getElementById('player-name').value.trim();
+      if (!name) { document.getElementById('player-name').focus(); return; }
+      answers = new Array(quiz.questions.length).fill(null);
+      current = 0;
+      show('quiz-section');
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      const q = quiz.questions[current];
+      const total = quiz.questions.length;
+      const isLast = current === total - 1;
+
+      document.getElementById('progress-fill').style.width = `${(current / total) * 100}%`;
+      document.getElementById('question-meta').textContent = `Question ${current + 1} of ${total}`;
+      document.getElementById('question-text').textContent = q.text;
+
+      const nextBtn = document.getElementById('next-btn');
+      nextBtn.textContent = isLast ? 'Submit answers 🔥' : 'Next →';
+      nextBtn.onclick = isLast ? submitAnswers : advanceQuestion;
+      nextBtn.disabled = answers[current] === null;
+
+      document.getElementById('options-list').innerHTML = q.options.map((opt, i) => `
+        <button class="option-btn ${answers[current] === i ? 'selected' : ''}" data-i="${i}" type="button">${opt}</button>
+      `).join('');
+
+      document.querySelectorAll('.option-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          answers[current] = +btn.dataset.i;
+          document.querySelectorAll('.option-btn').forEach(b => b.classList.toggle('selected', +b.dataset.i === answers[current]));
+          document.getElementById('next-btn').disabled = false;
+        });
+      });
+    }
+
+    function advanceQuestion() {
+      if (answers[current] === null) return;
+      current++;
+      renderQuestion();
+    }
+
+    async function submitAnswers() {
+      if (answers.some(a => a === null)) return;
+      const playerName = document.getElementById('player-name').value.trim();
+      show('submitting-section');
+
+      try {
+        const res = await fetch(`/quizzes/${quizId}/plays`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ player_name: playerName, answers }),
+        });
+        if (!res.ok) throw new Error('submit failed');
+        const data = await res.json();
+        renderResults(data);
+        show('results-section');
+      } catch {
+        alert('Something went wrong submitting your answers. Try again.');
+        show('quiz-section');
+      }
+    }
+
+    function renderResults(data) {
+      document.getElementById('score-num').textContent = data.score;
+      document.getElementById('score-denom').textContent = `/${data.total}`;
+      document.getElementById('score-summary').textContent = data.summary;
+
+      document.getElementById('results-list').innerHTML = data.results.map((r, i) => {
+        const isCorrect = r.chosen === r.correct;
+        const chosenText = quiz.questions[i].options[r.chosen];
+        const correctText = quiz.questions[i].options[r.correct];
+        return `
+          <div class="result-item ${isCorrect ? 'correct' : 'wrong'}">
+            <div class="result-q">${r.question}</div>
+            <div class="result-answer">
+              ${isCorrect ? chosenText : chosenText}
+              <span class="badge ${isCorrect ? 'badge-correct' : 'badge-wrong'}">${isCorrect ? '✓ Correct' : '✗ Wrong'}</span>
+            </div>
+            ${!isCorrect ? `<div class="result-correct-answer">Answer: ${correctText}</div>` : ''}
+            <div class="result-quip">"${r.quip}"</div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('leaderboard-list').innerHTML = data.leaderboard.map((entry, i) => `
+        <div class="lb-item">
+          <div class="lb-rank ${i === 0 ? 'gold' : ''}">#${i + 1}</div>
+          <div class="lb-name">${entry.player_name}</div>
+          <div class="lb-score">${entry.score}/${data.total}</div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('start-btn').addEventListener('click', startQuiz);
+    document.getElementById('player-name').addEventListener('keydown', e => { if (e.key === 'Enter') startQuiz(); });
+    document.getElementById('play-again-btn').addEventListener('click', () => {
+      answers = new Array(quiz.questions.length).fill(null);
+      current = 0;
+      document.getElementById('player-name').value = '';
+      show('name-section');
+    });
+
+    loadQuiz();
+  </script>
+</body>
+</html>

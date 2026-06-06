@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DYKM — Do You Know Me?</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="page">
+    <div class="logo">DYKM<span class="dot">.</span></div>
+    <div class="tagline">How well do your friends really know you?</div>
+
+    <!-- Create form -->
+    <div id="create-section" class="section active">
+      <div class="card">
+        <h2>Create your quiz</h2>
+        <p class="subtitle">Add a few facts about yourself — we'll turn them into a roast quiz your friends can play.</p>
+
+        <div class="field">
+          <label>Your name</label>
+          <input class="input" id="creator-name" type="text" placeholder="e.g. Zagham" maxlength="50" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label>Facts about you <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(add at least 5)</span></label>
+          <div class="facts-list" id="facts-list"></div>
+          <button class="add-fact-btn" id="add-fact-btn" type="button">+ Add another fact</button>
+        </div>
+
+        <button class="btn btn-primary" id="create-btn" type="button">Generate my quiz 🔥</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading-section" class="section">
+      <div class="card text-center">
+        <div class="spinner"></div>
+        <div class="loading-text">The AI is writing your roasts…<br>This takes about 10 seconds.</div>
+      </div>
+    </div>
+
+    <!-- Share -->
+    <div id="share-section" class="section">
+      <div class="card">
+        <h2>Your quiz is ready 🎉</h2>
+        <p class="subtitle">Copy this link and send it to your friends. See who actually knows you.</p>
+        <div class="share-url-box">
+          <input class="share-url-input" id="share-url" type="text" readonly>
+          <button class="copy-btn" id="copy-btn" type="button">Copy</button>
+        </div>
+      </div>
+      <button class="btn btn-outline" id="restart-btn" type="button">Create another quiz</button>
+    </div>
+  </div>
+
+  <script>
+    const MIN = 5;
+    const MAX = 10;
+    const HINTS = [
+      'e.g. obsessed with pizza',
+      'e.g. total night owl',
+      'e.g. dog person',
+      'e.g. summer is my season',
+      'e.g. hiker, not a runner',
+      'e.g. terrible at replying',
+      'e.g. coffee before anything',
+      'e.g. overthinks everything',
+      'e.g. always 5 minutes late',
+      'e.g. secretly loves reality TV',
+    ];
+
+    let factIds = [];
+
+    function uid() { return Date.now() + Math.random(); }
+
+    function show(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function renderFacts() {
+      const canRemove = factIds.length > MIN;
+      document.getElementById('facts-list').innerHTML = factIds.map((id, i) => `
+        <div class="fact-row">
+          <input class="input fact-input" type="text" placeholder="${HINTS[i] || 'another fact about you'}" maxlength="120" data-id="${id}" autocomplete="off">
+          ${canRemove ? `<button class="remove-fact" data-id="${id}" type="button" aria-label="Remove">×</button>` : ''}
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.remove-fact').forEach(btn => {
+        btn.addEventListener('click', () => {
+          factIds = factIds.filter(id => id !== +btn.dataset.id);
+          renderFacts();
+          updateAddBtn();
+        });
+      });
+    }
+
+    function updateAddBtn() {
+      const btn = document.getElementById('add-fact-btn');
+      btn.disabled = factIds.length >= MAX;
+    }
+
+    function getFactValues() {
+      return [...document.querySelectorAll('.fact-input')]
+        .map(el => el.value.trim())
+        .filter(Boolean);
+    }
+
+    function init() {
+      for (let i = 0; i < MIN; i++) factIds.push(uid());
+      renderFacts();
+
+      document.getElementById('add-fact-btn').addEventListener('click', () => {
+        if (factIds.length >= MAX) return;
+        factIds.push(uid());
+        renderFacts();
+        updateAddBtn();
+        // focus the new input
+        const inputs = document.querySelectorAll('.fact-input');
+        inputs[inputs.length - 1].focus();
+      });
+
+      document.getElementById('create-btn').addEventListener('click', createQuiz);
+      document.getElementById('copy-btn').addEventListener('click', copyLink);
+      document.getElementById('restart-btn').addEventListener('click', () => show('create-section'));
+    }
+
+    async function createQuiz() {
+      const name = document.getElementById('creator-name').value.trim();
+      const answers = getFactValues();
+
+      if (!name) {
+        document.getElementById('creator-name').focus();
+        return;
+      }
+      if (answers.length < MIN) {
+        alert(`Please fill in at least ${MIN} facts about yourself.`);
+        return;
+      }
+
+      show('loading-section');
+
+      try {
+        const res = await fetch('/quizzes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ creator_name: name, answers }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Server error ${res.status}`);
+        }
+        const data = await res.json();
+        const url = `${location.origin}/q/${data.id}`;
+        document.getElementById('share-url').value = url;
+        show('share-section');
+      } catch (err) {
+        alert('Something went wrong: ' + err.message);
+        show('create-section');
+      }
+    }
+
+    function copyLink() {
+      const url = document.getElementById('share-url').value;
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
