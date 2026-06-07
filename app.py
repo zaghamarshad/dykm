@@ -34,6 +34,11 @@ def index():
     return render_template("index.html")
 
 
+@app.get("/health")
+def health():
+    return jsonify({"status": "ok"})
+
+
 @app.get("/q/<quiz_id>")
 def play_quiz(quiz_id: str):
     return render_template("play.html")

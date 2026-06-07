@@ -11,6 +11,14 @@
     <div class="logo">DYKM<span class="dot">.</span></div>
     <div class="tagline">How well do your friends really know you?</div>
 
+    <!-- Waking up -->
+    <div id="wakeup-section" class="section">
+      <div class="card text-center">
+        <div class="spinner"></div>
+        <div class="loading-text" style="margin-top:0">Waking up the server…<br><span style="font-size:13px">Free hosting goes to sleep. Give it 30 seconds.</span></div>
+      </div>
+    </div>
+
     <!-- Create form -->
     <div id="create-section" class="section active">
       <div class="card">
@@ -288,6 +296,18 @@
 
     init();
     renderRecentQuizzes();
+
+    // Show wakeup screen if server doesn't respond within 2s (Render cold start)
+    const wakeupTimer = setTimeout(() => show('wakeup-section'), 2000);
+    fetch('/health').then(() => {
+      clearTimeout(wakeupTimer);
+      show('create-section');
+    }).catch(() => {
+      // keep showing wakeup, retry every 5s
+      const retry = setInterval(() => {
+        fetch('/health').then(() => { clearInterval(retry); show('create-section'); }).catch(() => {});
+      }, 5000);
+    });
   </script>
 </body>
 </html>
