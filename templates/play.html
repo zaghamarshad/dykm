@@ -107,10 +107,11 @@
         quiz = await res.json();
 
         document.getElementById('creator-heading').textContent = `Do you know ${quiz.creator_name}?`;
+        const playLine = quiz.play_count === 0
+          ? 'Be the first to take this quiz.'
+          : `${quiz.play_count} ${quiz.play_count === 1 ? 'person has' : 'people have'} taken this. Prove you know them better.`;
         document.getElementById('creator-subtitle').textContent =
-          quiz.play_count === 0
-            ? 'Be the first to take this quiz.'
-            : `${quiz.play_count} ${quiz.play_count === 1 ? 'person has' : 'people have'} taken this. Prove you know them better.`;
+          quiz.theme ? `${quiz.theme} · ${playLine}` : playLine;
         document.title = `DYKM — Do you know ${quiz.creator_name}?`;
         show('name-section');
       } catch {

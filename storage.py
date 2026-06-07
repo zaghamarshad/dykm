@@ -45,7 +45,8 @@ class SQLiteBackend(StorageBackend):
                     creator_name TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     play_count INTEGER DEFAULT 0,
-                    questions TEXT NOT NULL
+                    questions TEXT NOT NULL,
+                    theme TEXT NOT NULL DEFAULT ''
                 );
                 CREATE TABLE IF NOT EXISTS plays (
                     id TEXT PRIMARY KEY,
@@ -55,12 +56,16 @@ class SQLiteBackend(StorageBackend):
                     created_at TEXT NOT NULL
                 );
             """)
+            try:
+                conn.execute("ALTER TABLE quizzes ADD COLUMN theme TEXT NOT NULL DEFAULT ''")
+            except sqlite3.OperationalError:
+                pass  # column already exists
 
-    def create_quiz(self, id: str, creator_name: str, questions: list[dict]) -> None:
+    def create_quiz(self, id: str, creator_name: str, questions: list[dict], theme: str = "") -> None:
         with self._connect() as conn:
             conn.execute(
-                "INSERT INTO quizzes (id, creator_name, created_at, play_count, questions) VALUES (?, ?, ?, 0, ?)",
-                (id, creator_name, datetime.now(timezone.utc).isoformat(), json.dumps(questions)),
+                "INSERT INTO quizzes (id, creator_name, created_at, play_count, questions, theme) VALUES (?, ?, ?, 0, ?, ?)",
+                (id, creator_name, datetime.now(timezone.utc).isoformat(), json.dumps(questions), theme),
             )
 
     def get_quiz(self, id: str) -> dict | None:

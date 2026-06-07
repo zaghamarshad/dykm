@@ -49,6 +49,7 @@ def create_quiz():
     body = request.get_json(silent=True) or {}
     creator_name = body.get("creator_name", "").strip()
     answers = body.get("answers", [])
+    theme = body.get("theme", "").strip()
 
     if not creator_name:
         return jsonify({"error": "creator_name is required"}), 400
@@ -56,12 +57,12 @@ def create_quiz():
         return jsonify({"error": "answers must be a non-empty list"}), 400
 
     try:
-        questions = generate_quiz(creator_name, [str(a) for a in answers])
+        questions = generate_quiz(creator_name, [str(a) for a in answers], theme)
     except Exception as e:
         return jsonify({"error": f"AI generation failed: {e}"}), 502
 
     quiz_id = _new_id()
-    storage.create_quiz(quiz_id, creator_name, questions)
+    storage.create_quiz(quiz_id, creator_name, questions, theme)
 
     return jsonify({"id": quiz_id, "share_path": f"/q/{quiz_id}"}), 201
 
@@ -81,6 +82,7 @@ def get_quiz(quiz_id: str):
     return jsonify({
         "id": quiz["id"],
         "creator_name": quiz["creator_name"],
+        "theme": quiz.get("theme", ""),
         "play_count": quiz["play_count"],
         "questions": safe_questions,
     })

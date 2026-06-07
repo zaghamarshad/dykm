@@ -31,6 +31,11 @@
         </div>
 
         <div class="field">
+          <label>Quiz theme <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+          <input class="input" id="quiz-theme" type="text" placeholder="e.g. best friend edition, work bestie, college crew…" maxlength="80" autocomplete="off">
+        </div>
+
+        <div class="field">
           <label>Facts about you <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(add at least 5)</span></label>
           <div class="facts-list" id="facts-list"></div>
           <button class="add-fact-btn" id="add-fact-btn" type="button">+ Add another fact</button>
@@ -229,7 +234,7 @@
         const res = await fetch('/quizzes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ creator_name: name, answers }),
+          body: JSON.stringify({ creator_name: name, answers, theme: document.getElementById('quiz-theme').value.trim() }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
