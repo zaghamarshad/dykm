@@ -98,6 +98,7 @@
     ];
 
     let factIds = [];
+    let pinnedIds = new Set();
 
     function uid() { return Date.now() + Math.random(); }
 
@@ -108,16 +109,29 @@
 
     function renderFacts() {
       const canRemove = factIds.length > MIN;
-      document.getElementById('facts-list').innerHTML = factIds.map((id, i) => `
+      document.getElementById('facts-list').innerHTML = factIds.map((id, i) => {
+        const pinned = pinnedIds.has(id);
+        return `
         <div class="fact-row">
+          <button class="pin-btn ${pinned ? 'pinned' : ''}" data-id="${id}" type="button" title="${pinned ? 'Unpin' : 'Pin — AI must use this fact'}" style="width:38px;height:44px;background:none;border:1.5px solid ${pinned ? 'var(--accent)' : 'var(--border)'};border-radius:8px;font-size:15px;cursor:pointer;flex-shrink:0;transition:all 0.15s;color:${pinned ? 'var(--accent)' : 'var(--text-muted)'}">📌</button>
           <input class="input fact-input" type="text" placeholder="${HINTS[i] || 'another fact about you'}" maxlength="120" data-id="${id}" autocomplete="off">
           ${canRemove ? `<button class="remove-fact" data-id="${id}" type="button" aria-label="Remove">×</button>` : ''}
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
+
+      document.querySelectorAll('.pin-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = +btn.dataset.id;
+          pinnedIds.has(id) ? pinnedIds.delete(id) : pinnedIds.add(id);
+          renderFacts();
+        });
+      });
 
       document.querySelectorAll('.remove-fact').forEach(btn => {
         btn.addEventListener('click', () => {
-          factIds = factIds.filter(id => id !== +btn.dataset.id);
+          const id = +btn.dataset.id;
+          factIds = factIds.filter(f => f !== id);
+          pinnedIds.delete(id);
           renderFacts();
           updateAddBtn();
         });
@@ -131,8 +145,8 @@
 
     function getFactValues() {
       return [...document.querySelectorAll('.fact-input')]
-        .map(el => el.value.trim())
-        .filter(Boolean);
+        .map(el => ({ value: el.value.trim(), pinned: pinnedIds.has(+el.dataset.id) }))
+        .filter(f => f.value);
     }
 
     function init() {
@@ -216,13 +230,13 @@
 
     async function createQuiz() {
       const name = document.getElementById('creator-name').value.trim();
-      const answers = getFactValues();
+      const facts = getFactValues();
 
       if (!name) {
         document.getElementById('creator-name').focus();
         return;
       }
-      if (answers.length < MIN) {
+      if (facts.length < MIN) {
         alert(`Please fill in at least ${MIN} facts about yourself.`);
         return;
       }
@@ -234,7 +248,7 @@
         const res = await fetch('/quizzes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ creator_name: name, answers, theme: document.getElementById('quiz-theme').value.trim() }),
+          body: JSON.stringify({ creator_name: name, answers: facts.map(f => f.value), pinned: facts.filter(f => f.pinned).map(f => f.value), theme: document.getElementById('quiz-theme').value.trim() }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));

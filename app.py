@@ -49,6 +49,7 @@ def create_quiz():
     body = request.get_json(silent=True) or {}
     creator_name = body.get("creator_name", "").strip()
     answers = body.get("answers", [])
+    pinned = body.get("pinned", [])
     theme = body.get("theme", "").strip()
 
     if not creator_name:
@@ -57,7 +58,7 @@ def create_quiz():
         return jsonify({"error": "answers must be a non-empty list"}), 400
 
     try:
-        questions = generate_quiz(creator_name, [str(a) for a in answers], theme)
+        questions = generate_quiz(creator_name, [str(a) for a in answers], theme, [str(p) for p in pinned])
     except Exception as e:
         return jsonify({"error": f"AI generation failed: {e}"}), 502
 

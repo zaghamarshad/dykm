@@ -73,9 +73,13 @@ def parse_quiz_json(raw: str) -> list[dict]:
     return json.loads(_clean_json(_strip_fences(raw)))
 
 
-def generate_quiz(creator_name: str, answers: list[str], theme: str = "") -> list[dict]:
+def generate_quiz(creator_name: str, answers: list[str], theme: str = "", pinned: list[str] | None = None) -> list[dict]:
     """Make exactly one Anthropic API call and return 7 question dicts."""
-    numbered = "\n".join(f"{i+1}. {a}" for i, a in enumerate(answers))
+    pinned_set = set(pinned or [])
+    numbered = "\n".join(
+        f"{i+1}. {a}{' ← MUST generate a question from this fact' if a in pinned_set else ''}"
+        for i, a in enumerate(answers)
+    )
     theme_line = f"Quiz theme: {theme}\n\n" if theme else ""
     user_message = (
         f"Creator name: {creator_name}\n\n"
