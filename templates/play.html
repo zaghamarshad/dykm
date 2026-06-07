@@ -81,6 +81,7 @@
         <div id="leaderboard-list"></div>
       </div>
 
+      <button class="btn btn-primary" id="share-result-btn" type="button">Share my result 🔥</button>
       <button class="btn btn-outline" id="play-again-btn" type="button">Play again</button>
       <a href="/" class="btn btn-outline" style="display:block;text-align:center;text-decoration:none;margin-top:10px;padding:15px 20px;border-radius:10px;font-size:16px;font-weight:700;color:var(--text);border:1.5px solid var(--border);">
         Create your own quiz 🔥
@@ -186,6 +187,17 @@
       document.getElementById('score-num').textContent = data.score;
       document.getElementById('score-denom').textContent = `/${data.total}`;
       document.getElementById('score-summary').textContent = data.summary;
+
+      const emoji = data.score === data.total ? '🏆' : data.score >= data.total * 0.7 ? '😎' : data.score >= data.total * 0.4 ? '😬' : '💀';
+      const shareText = `I scored ${data.score}/${data.total} on ${quiz.creator_name}'s quiz ${emoji}\nThink you know them better? ${location.href}`;
+      document.getElementById('share-result-btn').onclick = () => {
+        navigator.clipboard.writeText(shareText).then(() => {
+          const btn = document.getElementById('share-result-btn');
+          btn.textContent = 'Copied! Go paste it 😈';
+          btn.style.background = 'var(--green)';
+          setTimeout(() => { btn.textContent = 'Share my result 🔥'; btn.style.background = ''; }, 3000);
+        });
+      };
 
       document.getElementById('results-list').innerHTML = data.results.map((r, i) => {
         const isCorrect = r.chosen === r.correct;
