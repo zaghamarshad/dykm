@@ -57,7 +57,7 @@
     <div id="submitting-section" class="section">
       <div class="card text-center">
         <div class="spinner"></div>
-        <div class="loading-text">Grading your answers…<br>Preparing your roast 🔥</div>
+        <div class="loading-text">Grading your answers…<br>Spilling the tea ☕</div>
       </div>
     </div>
 
@@ -198,7 +198,7 @@
               <span class="badge ${isCorrect ? 'badge-correct' : 'badge-wrong'}">${isCorrect ? '✓ Correct' : '✗ Wrong'}</span>
             </div>
             ${!isCorrect ? `<div class="result-correct-answer">Answer: ${correctText}</div>` : ''}
-            <div class="result-quip">"${r.quip}"</div>
+            <div class="result-quip"><span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);font-style:normal;">The tea</span><br>"${r.quip}"</div>
           </div>
         `;
       }).join('');
