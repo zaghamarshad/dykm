@@ -30,6 +30,12 @@
 
         <button class="btn btn-primary" id="create-btn" type="button">Generate my quiz 🔥</button>
       </div>
+
+      <!-- Recent quizzes -->
+      <div id="recent-quizzes" style="display:none">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Your recent quizzes</div>
+        <div id="recent-list"></div>
+      </div>
     </div>
 
     <!-- Loading -->
@@ -225,12 +231,49 @@
         stopLoadingAnimation();
         const url = `${location.origin}/q/${data.id}`;
         document.getElementById('share-url').value = url;
+        saveRecentQuiz(name, url);
         show('share-section');
       } catch (err) {
         stopLoadingAnimation();
         alert('Something went wrong: ' + err.message);
         show('create-section');
       }
+    }
+
+    function saveRecentQuiz(name, url) {
+      const key = 'dykm_recent';
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      list.unshift({ name, url, created: Date.now() });
+      localStorage.setItem(key, JSON.stringify(list.slice(0, 5)));
+      renderRecentQuizzes();
+    }
+
+    function renderRecentQuizzes() {
+      const key = 'dykm_recent';
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      const container = document.getElementById('recent-quizzes');
+      const listEl = document.getElementById('recent-list');
+      if (!list.length) { container.style.display = 'none'; return; }
+      container.style.display = 'block';
+      listEl.innerHTML = list.map((q, i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:700;margin-bottom:2px">${q.name}'s quiz</div>
+            <div style="font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${q.url}</div>
+          </div>
+          <button onclick="copyRecent(${i})" id="recent-copy-${i}" style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;transition:background 0.15s">Copy</button>
+        </div>
+      `).join('');
+    }
+
+    function copyRecent(i) {
+      const list = JSON.parse(localStorage.getItem('dykm_recent') || '[]');
+      navigator.clipboard.writeText(list[i].url).then(() => {
+        const btn = document.getElementById(`recent-copy-${i}`);
+        btn.textContent = 'Copied!';
+        btn.style.color = 'var(--green)';
+        setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; }, 2000);
+      });
     }
 
     function copyLink() {
@@ -244,6 +287,7 @@
     }
 
     init();
+    renderRecentQuizzes();
   </script>
 </body>
 </html>
