@@ -41,7 +41,18 @@ def health():
 
 @app.get("/q/<quiz_id>")
 def play_quiz(quiz_id: str):
-    return render_template("play.html")
+    quiz = storage.get_quiz(quiz_id)
+    if quiz is None:
+        return render_template("play.html", title="Quiz not found", description="This quiz doesn't exist.")
+    theme = quiz.get("theme", "")
+    description = f"{theme} · " if theme else ""
+    description += f"{quiz['play_count']} people have played. Think you know them?"
+    return render_template(
+        "play.html",
+        title=f"Do you know {quiz['creator_name']}?",
+        description=description,
+        url=request.url,
+    )
 
 
 @app.post("/quizzes")
