@@ -117,6 +117,9 @@ def submit_play(quiz_id: str):
         except (TypeError, ValueError):
             return jsonify({"error": f"answers[{i}] must be an integer"}), 400
 
+        if player_answer < 0 or player_answer >= len(q["options"]):
+            return jsonify({"error": f"answers[{i}] must be 0–{len(q['options']) - 1}"}), 400
+
         correct = q["correct_index"]
         is_correct = player_answer == correct
         if is_correct:

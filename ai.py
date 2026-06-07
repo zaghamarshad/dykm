@@ -102,4 +102,12 @@ def generate_quiz(creator_name: str, answers: list[str], theme: str = "", pinned
     if not isinstance(questions, list) or len(questions) != 7:
         raise ValueError(f"Expected 7 questions, got {len(questions) if isinstance(questions, list) else type(questions)}")
 
+    for i, q in enumerate(questions):
+        if not isinstance(q.get("quips"), list) or len(q["quips"]) != 4:
+            raise ValueError(f"Question {i} must have exactly 4 quips")
+        if not isinstance(q.get("correct_index"), int) or not (0 <= q["correct_index"] <= 3):
+            raise ValueError(f"Question {i} correct_index must be 0–3")
+        if not isinstance(q.get("options"), list) or len(q["options"]) != 4:
+            raise ValueError(f"Question {i} must have exactly 4 options")
+
     return questions
