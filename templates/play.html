@@ -246,6 +246,12 @@
     document.getElementById('player-name').addEventListener('input', e => {
       document.getElementById('start-btn').disabled = e.target.value.trim().length === 0;
     });
+    document.getElementById('player-name').addEventListener('focus', () => {
+      // Wait for mobile keyboard to finish animating up, then scroll button into view
+      setTimeout(() => {
+        document.getElementById('start-btn').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 400);
+    });
     document.getElementById('player-name').addEventListener('keydown', e => { if (e.key === 'Enter') startQuiz(); });
     document.getElementById('play-again-btn').addEventListener('click', () => {
       answers = new Array(quiz.questions.length).fill(null);
