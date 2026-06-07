@@ -165,7 +165,16 @@
 
       document.getElementById('create-btn').addEventListener('click', createQuiz);
       document.getElementById('copy-btn').addEventListener('click', copyLink);
-      document.getElementById('restart-btn').addEventListener('click', () => show('create-section'));
+      document.getElementById('restart-btn').addEventListener('click', () => {
+        document.getElementById('creator-name').value = '';
+        document.getElementById('quiz-theme').value = '';
+        factIds = [];
+        pinnedIds = new Set();
+        for (let i = 0; i < MIN; i++) factIds.push(uid());
+        renderFacts();
+        updateAddBtn();
+        show('create-section');
+      });
       document.getElementById('creator-name').addEventListener('focus', () => {
         setTimeout(() => {
           document.getElementById('create-btn').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
