@@ -199,9 +199,11 @@
     ];
 
     let loadingTimer = null;
+    let crawlTimer = null;
 
     function startLoadingAnimation() {
       let stepIndex = 0;
+      let crawlPct = 92;
       const bar = document.getElementById('loading-bar');
       const pctEl = document.getElementById('loading-pct');
       const labelEl = document.getElementById('loading-step-label');
@@ -209,8 +211,17 @@
 
       stepsEl.innerHTML = '';
 
+      function startCrawl() {
+        // Slowly inch toward 99% so the bar never looks stuck
+        crawlTimer = setInterval(() => {
+          crawlPct = Math.min(crawlPct + 0.5, 99);
+          bar.style.width = crawlPct + '%';
+          pctEl.textContent = Math.round(crawlPct) + '%';
+        }, 2000);
+      }
+
       function tick() {
-        if (stepIndex >= LOADING_STEPS.length) return;
+        if (stepIndex >= LOADING_STEPS.length) { startCrawl(); return; }
         const step = LOADING_STEPS[stepIndex];
 
         bar.style.width = step.pct + '%';
@@ -234,7 +245,8 @@
         stepsEl.appendChild(active);
 
         stepIndex++;
-        loadingTimer = setTimeout(tick, stepIndex === 1 ? 8000 : 12000);
+        // 6s first pause, then 9s between steps — gets to 92% in ~42s, matching Opus timing
+        loadingTimer = setTimeout(tick, stepIndex === 1 ? 6000 : 9000);
       }
 
       tick();
@@ -242,6 +254,7 @@
 
     function stopLoadingAnimation() {
       if (loadingTimer) { clearTimeout(loadingTimer); loadingTimer = null; }
+      if (crawlTimer) { clearInterval(crawlTimer); crawlTimer = null; }
       const bar = document.getElementById('loading-bar');
       const pctEl = document.getElementById('loading-pct');
       const labelEl = document.getElementById('loading-step-label');
