@@ -32,7 +32,11 @@
       <div class="card">
         <h2 id="creator-heading"></h2>
         <p class="subtitle" id="creator-subtitle"></p>
-        <div class="field mt-24">
+        <div id="top-plays" style="display:none;margin-bottom:20px">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Top scores</div>
+          <div id="top-plays-list"></div>
+        </div>
+        <div class="field">
           <label>Your name</label>
           <input class="input" id="player-name" type="text" placeholder="e.g. Ali" maxlength="50" autocomplete="off">
         </div>
@@ -114,6 +118,19 @@
         document.getElementById('creator-subtitle').textContent =
           quiz.theme ? `${quiz.theme} · ${playLine}` : playLine;
         document.title = `DYKM — Do you know ${quiz.creator_name}?`;
+
+        if (quiz.top_plays && quiz.top_plays.length > 0) {
+          const medals = ['🥇', '🥈', '🥉'];
+          document.getElementById('top-plays-list').innerHTML = quiz.top_plays.map((p, i) => `
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px">
+              <span style="font-size:16px">${medals[i]}</span>
+              <span style="flex:1;font-size:14px;font-weight:600">${p.player_name}</span>
+              <span style="font-size:14px;font-weight:800;color:var(--accent)">${p.score}/${quiz.questions.length}</span>
+            </div>
+          `).join('');
+          document.getElementById('top-plays').style.display = 'block';
+        }
+
         show('name-section');
       } catch {
         show('error-section');

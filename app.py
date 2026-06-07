@@ -80,11 +80,14 @@ def get_quiz(quiz_id: str):
     ]
     # correct_index and quips are intentionally stripped — never sent to players
 
+    top_plays = storage.get_leaderboard(quiz_id)[:3]
+
     return jsonify({
         "id": quiz["id"],
         "creator_name": quiz["creator_name"],
         "theme": quiz.get("theme", ""),
         "play_count": quiz["play_count"],
+        "top_plays": top_plays,
         "questions": safe_questions,
     })
 
