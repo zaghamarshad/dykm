@@ -36,7 +36,7 @@
           <label>Your name</label>
           <input class="input" id="player-name" type="text" placeholder="e.g. Ali" maxlength="50" autocomplete="off">
         </div>
-        <button class="btn btn-primary" id="start-btn" type="button">Start Quiz →</button>
+        <button class="btn btn-primary" id="start-btn" type="button" disabled>Start Quiz →</button>
       </div>
     </div>
 
@@ -213,6 +213,9 @@
     }
 
     document.getElementById('start-btn').addEventListener('click', startQuiz);
+    document.getElementById('player-name').addEventListener('input', e => {
+      document.getElementById('start-btn').disabled = e.target.value.trim().length === 0;
+    });
     document.getElementById('player-name').addEventListener('keydown', e => { if (e.key === 'Enter') startQuiz(); });
     document.getElementById('play-again-btn').addEventListener('click', () => {
       answers = new Array(quiz.questions.length).fill(null);
