@@ -34,9 +34,17 @@
 
     <!-- Loading -->
     <div id="loading-section" class="section">
-      <div class="card text-center">
-        <div class="spinner"></div>
-        <div class="loading-text">The AI is writing your roasts…<br>This takes about 10 seconds.</div>
+      <div class="card">
+        <div style="margin-bottom:20px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+            <span id="loading-step-label" style="font-size:14px;font-weight:700;color:var(--text)">Writing your questions…</span>
+            <span id="loading-pct" style="font-size:14px;font-weight:700;color:var(--accent)">0%</span>
+          </div>
+          <div class="progress-bar" style="margin-bottom:0;height:6px">
+            <div class="progress-fill" id="loading-bar" style="width:0%;transition:width 0.8s ease"></div>
+          </div>
+        </div>
+        <div id="loading-steps" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
     </div>
 
@@ -127,6 +135,66 @@
       document.getElementById('restart-btn').addEventListener('click', () => show('create-section'));
     }
 
+    const LOADING_STEPS = [
+      { pct: 10, label: 'Writing your questions…',      detail: 'Turning your facts into quiz material' },
+      { pct: 35, label: 'Crafting the roasts…',         detail: 'The AI is getting mean (in a loving way)' },
+      { pct: 60, label: 'Reviewing the burns…',         detail: 'Making sure each roast hits right' },
+      { pct: 80, label: 'Polishing the final questions…', detail: 'Almost there, hang tight' },
+      { pct: 92, label: 'Nearly done…',                 detail: 'Wrapping up the last few quips' },
+    ];
+
+    let loadingTimer = null;
+
+    function startLoadingAnimation() {
+      let stepIndex = 0;
+      const bar = document.getElementById('loading-bar');
+      const pctEl = document.getElementById('loading-pct');
+      const labelEl = document.getElementById('loading-step-label');
+      const stepsEl = document.getElementById('loading-steps');
+
+      stepsEl.innerHTML = '';
+
+      function tick() {
+        if (stepIndex >= LOADING_STEPS.length) return;
+        const step = LOADING_STEPS[stepIndex];
+
+        bar.style.width = step.pct + '%';
+        pctEl.textContent = step.pct + '%';
+        labelEl.textContent = step.label;
+
+        // Add completed step rows
+        if (stepIndex > 0) {
+          const prev = LOADING_STEPS[stepIndex - 1];
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-muted)';
+          row.innerHTML = `<span style="color:var(--green);font-size:15px">✓</span> ${prev.detail}`;
+          stepsEl.appendChild(row);
+        }
+
+        // Add current active row
+        const active = document.createElement('div');
+        active.id = 'active-step';
+        active.style.cssText = 'display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text)';
+        active.innerHTML = `<span style="display:inline-block;width:15px;height:15px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0"></span> ${step.detail}`;
+        stepsEl.appendChild(active);
+
+        stepIndex++;
+        loadingTimer = setTimeout(tick, stepIndex === 1 ? 8000 : 12000);
+      }
+
+      tick();
+    }
+
+    function stopLoadingAnimation() {
+      if (loadingTimer) { clearTimeout(loadingTimer); loadingTimer = null; }
+      const bar = document.getElementById('loading-bar');
+      const pctEl = document.getElementById('loading-pct');
+      const labelEl = document.getElementById('loading-step-label');
+      if (bar) { bar.style.width = '100%'; }
+      if (pctEl) { pctEl.textContent = '100%'; }
+      if (labelEl) { labelEl.textContent = 'Done!'; }
+    }
+
     async function createQuiz() {
       const name = document.getElementById('creator-name').value.trim();
       const answers = getFactValues();
@@ -141,6 +209,7 @@
       }
 
       show('loading-section');
+      startLoadingAnimation();
 
       try {
         const res = await fetch('/quizzes', {
@@ -153,10 +222,12 @@
           throw new Error(err.error || `Server error ${res.status}`);
         }
         const data = await res.json();
+        stopLoadingAnimation();
         const url = `${location.origin}/q/${data.id}`;
         document.getElementById('share-url').value = url;
         show('share-section');
       } catch (err) {
+        stopLoadingAnimation();
         alert('Something went wrong: ' + err.message);
         show('create-section');
       }
