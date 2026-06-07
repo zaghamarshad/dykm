@@ -1,5 +1,7 @@
 import secrets
+import time
 import uuid
+from collections import defaultdict
 
 from flask import Flask, jsonify, render_template, request
 
@@ -8,6 +10,26 @@ from storage import SQLiteBackend
 
 app = Flask(__name__)
 storage = SQLiteBackend("dykm.db")
+
+_rate_store: dict[str, list[float]] = defaultdict(list)
+RATE_LIMIT = 5      # max quiz creations per IP
+RATE_WINDOW = 3600  # per hour (seconds)
+
+
+def _client_ip() -> str:
+    # X-Forwarded-For is set by Render's proxy
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    return forwarded.split(",")[0].strip() or request.remote_addr or "unknown"
+
+
+def _is_rate_limited(ip: str) -> bool:
+    now = time.time()
+    cutoff = now - RATE_WINDOW
+    _rate_store[ip] = [t for t in _rate_store[ip] if t > cutoff]
+    if len(_rate_store[ip]) >= RATE_LIMIT:
+        return True
+    _rate_store[ip].append(now)
+    return False
 
 SCORE_SUMMARIES = [
     (7, "They know you like the back of their hand!"),
@@ -57,6 +79,9 @@ def play_quiz(quiz_id: str):
 
 @app.post("/quizzes")
 def create_quiz():
+    if _is_rate_limited(_client_ip()):
+        return jsonify({"error": "Too many quizzes created. Try again in an hour."}), 429
+
     body = request.get_json(silent=True) or {}
     creator_name = body.get("creator_name", "").strip()
     answers = body.get("answers", [])

@@ -264,6 +264,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ creator_name: name, answers: facts.map(f => f.value), pinned: facts.filter(f => f.pinned).map(f => f.value), theme: document.getElementById('quiz-theme').value.trim() }),
         });
+        if (res.status === 429) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Too many quizzes created. Try again in an hour.');
+        }
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || `Server error ${res.status}`);
