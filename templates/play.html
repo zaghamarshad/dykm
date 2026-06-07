@@ -66,7 +66,10 @@
         <div class="question-text" id="question-text"></div>
         <div class="options-list" id="options-list"></div>
       </div>
-      <button class="btn btn-primary" id="next-btn" type="button" disabled>Next →</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" id="back-btn" type="button" style="flex:1">← Back</button>
+        <button class="btn btn-primary" id="next-btn" type="button" style="flex:2" disabled>Next →</button>
+      </div>
     </div>
 
     <!-- Submitting -->
@@ -172,6 +175,10 @@
       document.getElementById('progress-fill').style.width = `${(current / total) * 100}%`;
       document.getElementById('question-meta').textContent = `Question ${current + 1} of ${total}`;
       document.getElementById('question-text').textContent = q.text;
+
+      const backBtn = document.getElementById('back-btn');
+      backBtn.disabled = current === 0;
+      backBtn.onclick = () => { current--; renderQuestion(); };
 
       const nextBtn = document.getElementById('next-btn');
       nextBtn.textContent = isLast ? 'Submit answers 🔥' : 'Next →';
